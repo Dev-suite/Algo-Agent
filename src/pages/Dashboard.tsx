@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCharacters } from '../hooks/useCharacters';
 import { useWallet } from '../hooks/useWallet';
+import { useTheme } from '../contexts/ThemeContext';
 import { 
   Bot, 
   Plus, 
@@ -17,7 +18,9 @@ import {
   Users,
   LogOut,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { Button } from '../ui';
 import WalletButton from '../components/WalletButton';
@@ -36,6 +39,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { characters, loading } = useCharacters();
   const { isConnected, account, formatAddress } = useWallet();
+  const { theme, toggleTheme } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState('overview');
@@ -143,11 +147,11 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-brand-900 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-brand-900 dark:bg-neutral-900 flex flex-col lg:flex-row transition-colors">
       {/* Desktop Sidebar */}
-      <div className={`hidden lg:flex ${sidebarCollapsed ? 'w-16' : 'w-64'} bg-neutral-800 border-r border-amber-900/20 flex-col transition-all duration-300`}>
+      <div className={`hidden lg:flex ${sidebarCollapsed ? 'w-16' : 'w-64'} bg-neutral-800 dark:bg-neutral-800 border-r border-amber-900/20 dark:border-neutral-700 flex-col transition-all duration-300`}>
         {/* Logo Section */}
-        <div className="p-6 border-b border-amber-900/20">
+        <div className="p-6 border-b border-amber-900/20 dark:border-neutral-700">
           <div 
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => window.location.href = '/'}
@@ -187,16 +191,29 @@ const Dashboard: React.FC = () => {
           </nav>
 
           {/* Bottom Menu */}
-          <div className="space-y-2 px-4 border-t border-amber-900/20 pt-6">
+          <div className="space-y-2 px-4 border-t border-amber-900/20 dark:border-neutral-700 pt-6">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-white hover:bg-default-300/20"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 flex-shrink-0" />
+              ) : (
+                <Moon className="w-5 h-5 flex-shrink-0" />
+              )}
+              {!sidebarCollapsed && (
+                <span className="font-['Montserrat'] text-[14px] font-[500]">
+                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </span>
+              )}
+            </button>
+
             {bottomMenuItems.map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
-                  isActive(item.path)
-                    ? 'bg-brand-600 text-white'
-                    : 'text-white hover:bg-default-300/20'
-                }`}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-white hover:bg-default-300/20"
               >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
                 {!sidebarCollapsed && (
@@ -228,11 +245,11 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Mobile Sidebar */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-neutral-800 border-r border-amber-900/20 transform transition-transform duration-300 z-50 ${
+      <div className={`lg:hidden fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-neutral-800 dark:bg-neutral-800 border-r border-amber-900/20 dark:border-neutral-700 transform transition-transform duration-300 z-50 ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Logo Section */}
-        <div className="p-6 border-b border-amber-900/20 flex items-center justify-between">
+        <div className="p-6 border-b border-amber-900/20 dark:border-neutral-700 flex items-center justify-between">
           <div 
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => window.location.href = '/'}
@@ -274,7 +291,22 @@ const Dashboard: React.FC = () => {
           </nav>
 
           {/* Bottom Menu */}
-          <div className="space-y-2 px-4 border-t border-amber-900/20 pt-6">
+          <div className="space-y-2 px-4 border-t border-amber-900/20 dark:border-neutral-700 pt-6">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-white hover:bg-default-300/20"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 flex-shrink-0" />
+              ) : (
+                <Moon className="w-5 h-5 flex-shrink-0" />
+              )}
+              <span className="font-['Montserrat'] text-[14px] font-[500]">
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </span>
+            </button>
+
             {bottomMenuItems.map((item) => (
               <button
                 key={item.path}
@@ -307,7 +339,7 @@ const Dashboard: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:pb-0 pb-20">
         {/* Header */}
-        <header className="bg-neutral-800 border-b border-amber-900/20 px-4 sm:px-6 py-4">
+        <header className="bg-neutral-800 dark:bg-neutral-800 border-b border-amber-900/20 dark:border-neutral-700 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
@@ -355,13 +387,13 @@ const Dashboard: React.FC = () => {
         </header>
 
         {/* Dashboard Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-white dark:bg-neutral-900 transition-colors">
           {renderMainContent()}
         </main>
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-neutral-800 border-t border-amber-900/20 px-4 py-2 z-40">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-neutral-800 dark:bg-neutral-800 border-t border-amber-900/20 dark:border-neutral-700 px-4 py-2 z-40">
         <div className="flex items-center justify-around">
           {menuItems.slice(0, 5).map((item) => (
             <button
