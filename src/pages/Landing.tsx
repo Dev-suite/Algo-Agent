@@ -394,13 +394,7 @@ const Landing: React.FC = () => {
 
           <div className="flex w-full max-w-[1280px] flex-col items-end gap-8 py-24">
             <div className="flex w-full max-w-[1024px] flex-col items-start justify-center gap-12">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="flex h-192 w-full flex-none flex-col items-center justify-center gap-2 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600/20 to-brand-400/20 backdrop-blur-md border border-brand-500/30"
-              >
+             
                 
 
               <motion.span
