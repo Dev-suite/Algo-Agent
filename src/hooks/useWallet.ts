@@ -14,9 +14,9 @@ export const useWallet = () => {
     return unsubscribe;
   }, []);
 
-  const connectWallet = async (walletId: string) => {
+  const connectWallet = async (walletId: string, method: 'extension' | 'mobile' = 'extension') => {
     try {
-      await walletService.connectWallet(walletId);
+      await walletService.connectWallet(walletId, method);
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       throw error;
@@ -30,6 +30,10 @@ export const useWallet = () => {
       console.error('Failed to disconnect wallet:', error);
       throw error;
     }
+  };
+
+  const cancelQRConnection = () => {
+    walletService.cancelQRConnection();
   };
 
   const refreshBalance = async () => {
@@ -57,6 +61,7 @@ export const useWallet = () => {
     ...walletState,
     connectWallet,
     disconnectWallet,
+    cancelQRConnection,
     refreshBalance,
     getAvailableWallets,
     formatAddress,

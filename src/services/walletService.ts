@@ -8,6 +8,7 @@ interface WalletInfo {
   name: string;
   icon: string;
   isInstalled: boolean;
+  supportsMobile?: boolean;
 }
 
 export interface WalletState {
@@ -16,11 +17,20 @@ export interface WalletState {
   balance: number;
   isConnecting: boolean;
   error: string | null;
+  qrCode?: string;
+  connectionMethod?: 'extension' | 'mobile';
+}
+
+interface PeraConnectionData {
+  bridge: string;
+  key: string;
+  deepLink: string;
 }
 
 class WalletService {
   private static instance: WalletService;
   private listeners: ((state: WalletState) => void)[] = [];
+  private connectionTimeout: NodeJS.Timeout | null = null;
   private state: WalletState = {
     isConnected: false,
     account: null,
@@ -67,19 +77,22 @@ class WalletService {
         id: 'pera',
         name: 'Pera Wallet',
         icon: '🔷',
-        isInstalled: this.isPeraWalletInstalled()
+        isInstalled: this.isPeraWalletInstalled(),
+        supportsMobile: true
       },
       {
         id: 'myalgo',
         name: 'MyAlgo Wallet',
         icon: '🟦',
-        isInstalled: this.isMyAlgoWalletInstalled()
+        isInstalled: this.isMyAlgoWalletInstalled(),
+        supportsMobile: false
       },
       {
         id: 'defly',
         name: 'Defly Wallet',
         icon: '🦋',
-        isInstalled: this.isDeflyWalletInstalled()
+        isInstalled: this.isDeflyWalletInstalled(),
+        supportsMobile: true
       }
     ];
 
@@ -101,20 +114,60 @@ class WalletService {
     return typeof window !== 'undefined' && 'defly' in window;
   }
 
+  // Generate QR code data for Pera Wallet connection
+  private generatePeraConnectionData(): PeraConnectionData {
+    const sessionId = crypto.randomUUID();
+    const bridge = 'https://bridge.walletconnect.org';
+    const key = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    const connectionData = {
+      bridge,
+      key,
+      sessionId,
+      version: 1,
+      clientId: crypto.randomUUID(),
+      clientMeta: {
+        description: 'Chain Agent - Decentralized AI Agent Launchpad',
+        url: window.location.origin,
+        icons: [`${window.location.origin}/favicon.ico`],
+        name: 'Chain Agent'
+      }
+    };
+
+    const encodedData = encodeURIComponent(JSON.stringify(connectionData));
+    const deepLink = `algorand-wc://wc?uri=${encodedData}`;
+
+    return {
+      bridge,
+      key,
+      deepLink
+    };
+  }
+
   // Connect to wallet
-  async connectWallet(walletId: string): Promise<void> {
-    this.updateState({ isConnecting: true, error: null });
+  async connectWallet(walletId: string, method: 'extension' | 'mobile' = 'extension'): Promise<void> {
+    this.updateState({ isConnecting: true, error: null, connectionMethod: method });
 
     try {
       switch (walletId) {
         case 'pera':
-          await this.connectPeraWallet();
+          if (method === 'mobile') {
+            await this.connectPeraWalletMobile();
+          } else {
+            await this.connectPeraWallet();
+          }
           break;
         case 'myalgo':
           await this.connectMyAlgoWallet();
           break;
         case 'defly':
-          await this.connectDeflyWallet();
+          if (method === 'mobile') {
+            await this.connectDeflyWalletMobile();
+          } else {
+            await this.connectDeflyWallet();
+          }
           break;
         default:
           throw new Error(`Unsupported wallet: ${walletId}`);
@@ -125,23 +178,24 @@ class WalletService {
         isConnecting: false, 
         error: errorMessage,
         isConnected: false,
-        account: null 
+        account: null,
+        qrCode: undefined
       });
       throw error;
     }
   }
 
-  // Connect Pera Wallet
+  // Connect Pera Wallet via extension
   private async connectPeraWallet(): Promise<void> {
     if (!this.isPeraWalletInstalled()) {
-      throw new Error('Pera Wallet is not installed. Please install it from the browser extension store.');
+      throw new Error('Pera Wallet extension is not installed. Please install it from the browser extension store or use mobile connection.');
     }
 
     try {
       // For demo purposes, we'll simulate the connection
       // In a real implementation, you would use the actual Pera Wallet SDK
       const mockAccount = {
-        address: 'ALGORAND' + Math.random().toString(36).substring(2, 15).toUpperCase(),
+        address: 'PERA' + Math.random().toString(36).substring(2, 15).toUpperCase() + 'ALGO',
         name: 'Pera Account'
       };
 
@@ -156,18 +210,95 @@ class WalletService {
         account: mockAccount,
         balance: mockBalance,
         isConnecting: false,
-        error: null
+        error: null,
+        qrCode: undefined,
+        connectionMethod: 'extension'
       });
 
       // Store connection in localStorage
       localStorage.setItem('walletConnection', JSON.stringify({
         walletId: 'pera',
+        method: 'extension',
         account: mockAccount,
         timestamp: Date.now()
       }));
 
     } catch (error) {
-      throw new Error('Failed to connect to Pera Wallet');
+      throw new Error('Failed to connect to Pera Wallet extension');
+    }
+  }
+
+  // Connect Pera Wallet via mobile QR code
+  private async connectPeraWalletMobile(): Promise<void> {
+    try {
+      // Generate connection data and QR code
+      const connectionData = this.generatePeraConnectionData();
+      
+      // Import QR code library dynamically
+      const QRCode = (await import('qrcode')).default;
+      const qrCodeDataUrl = await QRCode.toDataURL(connectionData.deepLink, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      this.updateState({
+        qrCode: qrCodeDataUrl,
+        isConnecting: true
+      });
+
+      // Set up connection timeout (2 minutes)
+      this.connectionTimeout = setTimeout(() => {
+        this.updateState({
+          isConnecting: false,
+          error: 'Connection timeout. Please try again.',
+          qrCode: undefined
+        });
+      }, 120000);
+
+      // Simulate mobile wallet connection after QR scan
+      // In a real implementation, this would be handled by WalletConnect protocol
+      setTimeout(async () => {
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
+          this.connectionTimeout = null;
+        }
+
+        const mockAccount = {
+          address: 'PERA' + Math.random().toString(36).substring(2, 15).toUpperCase() + 'MOBILE',
+          name: 'Pera Mobile Account'
+        };
+
+        const mockBalance = Math.floor(Math.random() * 15000) + 2000;
+
+        this.updateState({
+          isConnected: true,
+          account: mockAccount,
+          balance: mockBalance,
+          isConnecting: false,
+          error: null,
+          qrCode: undefined,
+          connectionMethod: 'mobile'
+        });
+
+        // Store connection in localStorage
+        localStorage.setItem('walletConnection', JSON.stringify({
+          walletId: 'pera',
+          method: 'mobile',
+          account: mockAccount,
+          timestamp: Date.now()
+        }));
+      }, 8000); // Simulate 8 second delay for QR scan and approval
+
+    } catch (error) {
+      if (this.connectionTimeout) {
+        clearTimeout(this.connectionTimeout);
+        this.connectionTimeout = null;
+      }
+      throw new Error('Failed to generate QR code for Pera Wallet mobile connection');
     }
   }
 
@@ -192,11 +323,13 @@ class WalletService {
         account: mockAccount,
         balance: mockBalance,
         isConnecting: false,
-        error: null
+        error: null,
+        connectionMethod: 'extension'
       });
 
       localStorage.setItem('walletConnection', JSON.stringify({
         walletId: 'myalgo',
+        method: 'extension',
         account: mockAccount,
         timestamp: Date.now()
       }));
@@ -206,10 +339,10 @@ class WalletService {
     }
   }
 
-  // Connect Defly Wallet
+  // Connect Defly Wallet via extension
   private async connectDeflyWallet(): Promise<void> {
     if (!this.isDeflyWalletInstalled()) {
-      throw new Error('Defly Wallet is not installed. Please install it from defly.app');
+      throw new Error('Defly Wallet extension is not installed. Please install it from defly.app or use mobile connection.');
     }
 
     try {
@@ -227,28 +360,109 @@ class WalletService {
         account: mockAccount,
         balance: mockBalance,
         isConnecting: false,
-        error: null
+        error: null,
+        connectionMethod: 'extension'
       });
 
       localStorage.setItem('walletConnection', JSON.stringify({
         walletId: 'defly',
+        method: 'extension',
         account: mockAccount,
         timestamp: Date.now()
       }));
 
     } catch (error) {
-      throw new Error('Failed to connect to Defly Wallet');
+      throw new Error('Failed to connect to Defly Wallet extension');
     }
+  }
+
+  // Connect Defly Wallet via mobile
+  private async connectDeflyWalletMobile(): Promise<void> {
+    try {
+      // Generate QR code for Defly mobile connection
+      const connectionData = {
+        action: 'connect',
+        dapp: 'Chain Agent',
+        url: window.location.origin,
+        sessionId: crypto.randomUUID()
+      };
+
+      const QRCode = (await import('qrcode')).default;
+      const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(connectionData), {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      this.updateState({
+        qrCode: qrCodeDataUrl,
+        isConnecting: true
+      });
+
+      // Simulate mobile connection
+      setTimeout(async () => {
+        const mockAccount = {
+          address: 'DEFLY' + Math.random().toString(36).substring(2, 15).toUpperCase() + 'MOBILE',
+          name: 'Defly Mobile Account'
+        };
+
+        const mockBalance = Math.floor(Math.random() * 12000) + 1500;
+
+        this.updateState({
+          isConnected: true,
+          account: mockAccount,
+          balance: mockBalance,
+          isConnecting: false,
+          error: null,
+          qrCode: undefined,
+          connectionMethod: 'mobile'
+        });
+
+        localStorage.setItem('walletConnection', JSON.stringify({
+          walletId: 'defly',
+          method: 'mobile',
+          account: mockAccount,
+          timestamp: Date.now()
+        }));
+      }, 6000);
+
+    } catch (error) {
+      throw new Error('Failed to generate QR code for Defly Wallet mobile connection');
+    }
+  }
+
+  // Cancel QR code connection
+  cancelQRConnection(): void {
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+      this.connectionTimeout = null;
+    }
+    
+    this.updateState({
+      isConnecting: false,
+      qrCode: undefined,
+      error: null
+    });
   }
 
   // Disconnect wallet
   async disconnectWallet(): Promise<void> {
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+      this.connectionTimeout = null;
+    }
+
     this.updateState({
       isConnected: false,
       account: null,
       balance: 0,
       isConnecting: false,
-      error: null
+      error: null,
+      qrCode: undefined,
+      connectionMethod: undefined
     });
 
     // Clear stored connection
@@ -261,7 +475,7 @@ class WalletService {
       const stored = localStorage.getItem('walletConnection');
       if (!stored) return;
 
-      const { walletId, account, timestamp } = JSON.parse(stored);
+      const { walletId, method, account, timestamp } = JSON.parse(stored);
       
       // Check if connection is less than 24 hours old
       const isRecent = Date.now() - timestamp < 24 * 60 * 60 * 1000;
@@ -278,7 +492,8 @@ class WalletService {
         account,
         balance: mockBalance,
         isConnecting: false,
-        error: null
+        error: null,
+        connectionMethod: method
       });
 
     } catch (error) {
