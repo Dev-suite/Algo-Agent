@@ -392,11 +392,9 @@ const Landing: React.FC = () => {
             </motion.span>
           </div>
 
-          <div className="flex w-full max-w-[1280px] flex-col items-end gap-8 py-24">
+          <div className="flex w-full max-w-[1280px] flex-col items-end gap-8 py-14">
             <div className="flex w-full max-w-[1024px] flex-col items-start justify-center gap-12">
              
-                
-
               <motion.span
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
