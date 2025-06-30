@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCharacters } from '../hooks/useCharacters';
+import { useWallet } from '../hooks/useWallet';
 import { 
   Bot, 
   Plus, 
@@ -19,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { Button } from '../ui';
+import WalletButton from '../components/WalletButton';
 
 // Import section components
 import OverviewSection from '../components/OverviewSection';
@@ -33,6 +35,7 @@ import WalletSection from '../components/WalletSection';
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { characters, loading } = useCharacters();
+  const { isConnected, account, formatAddress } = useWallet();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState('overview');
@@ -318,7 +321,10 @@ const Dashboard: React.FC = () => {
                   Dashboard Overview
                 </h1>
                 <p className="font-['Montserrat'] text-[12px] sm:text-[14px] font-[400] text-white/60">
-                  Welcome back! Here's what's happening with your agents.
+                  {isConnected && account 
+                    ? `Connected: ${formatAddress(account.address)}`
+                    : 'Connect your wallet to get started'
+                  }
                 </p>
               </div>
             </div>
@@ -330,6 +336,7 @@ const Dashboard: React.FC = () => {
                 onClick={() => setCurrentView('create')}
                 icon={<Plus className="w-4 h-4" />}
                 className="hidden sm:flex"
+                disabled={!isConnected}
               >
                 Create Agent
               </Button>
@@ -338,12 +345,11 @@ const Dashboard: React.FC = () => {
                 size="small"
                 onClick={() => setCurrentView('create')}
                 className="sm:hidden"
+                disabled={!isConnected}
               >
                 <Plus className="w-4 h-4" />
               </Button>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-brand-600 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
+              <WalletButton />
             </div>
           </div>
         </header>
