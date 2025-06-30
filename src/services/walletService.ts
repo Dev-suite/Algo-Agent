@@ -129,10 +129,10 @@ class WalletService {
       version: 1,
       clientId: crypto.randomUUID(),
       clientMeta: {
-        description: 'Chain Agent - Decentralized AI Agent Launchpad',
+        description: 'Algo Agent - Decentralized AI Agent Launchpad',
         url: window.location.origin,
         icons: [`${window.location.origin}/favicon.ico`],
-        name: 'Chain Agent'
+        name: 'Algo Agent'
       }
     };
 
@@ -382,7 +382,7 @@ class WalletService {
       // Generate QR code for Defly mobile connection
       const connectionData = {
         action: 'connect',
-        dapp: 'Chain Agent',
+        dapp: 'Algo Agent',
         url: window.location.origin,
         sessionId: crypto.randomUUID()
       };

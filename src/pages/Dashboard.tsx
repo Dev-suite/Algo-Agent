@@ -38,7 +38,7 @@ import WalletSection from '../components/WalletSection';
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { characters, loading } = useCharacters();
-  const { isConnected, account, formatAddress } = useWallet();
+  const { isConnected, account, formatAddress, disconnectWallet } = useWallet();
   const { theme, toggleTheme } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -98,6 +98,15 @@ const Dashboard: React.FC = () => {
   const handleViewChange = (view: string) => {
     setCurrentView(view);
     setMobileMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await disconnectWallet();
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
   };
 
   const renderMainContent = () => {
@@ -225,7 +234,7 @@ const Dashboard: React.FC = () => {
             ))}
             
             <button
-              onClick={() => {/* Add logout logic */}}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-error-600 hover:bg-error-900/20"
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />
@@ -324,7 +333,7 @@ const Dashboard: React.FC = () => {
             ))}
             
             <button
-              onClick={() => {/* Add logout logic */}}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-error-600 hover:bg-error-900/20"
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />
