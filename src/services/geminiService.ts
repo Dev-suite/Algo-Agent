@@ -13,11 +13,20 @@ class GeminiService {
   private baseUrl: string;
 
   constructor() {
-    this.apiKey = 'AIzaSyBc3k-TUsDFw91yEA-bO38svZhcgyjdBxE';
+    // Use environment variables for API key
+    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    
+    if (!this.apiKey) {
+      console.warn('Gemini API key not found. Please set VITE_GEMINI_API_KEY environment variable.');
+    }
   }
 
   async generateResponse(prompt: string, characterContext?: string): Promise<string> {
+    if (!this.apiKey) {
+      return "I apologize, but the AI service is not properly configured. Please contact the administrator to set up the API key.";
+    }
+
     try {
       const systemPrompt = `You are Zara the Strategist, an AI agent specialized in Algorand blockchain technology. You are analytical, strategic, and competitive with expertise in:
 
