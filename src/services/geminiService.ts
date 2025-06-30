@@ -136,3 +136,72 @@ ${characterContext ? `Additional context: ${characterContext}` : ''}
             temperature: 0.7,
             topK: 40,
             topP: 0.95,
+            maxOutputTokens: 1024,
+          },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
+          ]
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        let errorMessage = `Gemini API error: ${response.status} ${response.statusText}`;
+        try {
+            const errorJson = JSON.parse(errorBody);
+            if (errorJson.error && errorJson.error.message) {
+                errorMessage += ` - ${errorJson.error.message}`;
+            } else {
+                errorMessage += ` - ${errorBody}`;
+            }
+        } catch (e) {
+            errorMessage += ` - ${errorBody}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data: GeminiResponse = await response.json();
+
+      // --- Enhanced Response Validation ---
+      if (data.promptFeedback && data.promptFeedback.safetyRatings) {
+        const blockedCategories = data.promptFeedback.safetyRatings
+          .filter(rating => rating.blocked)
+          .map(rating => rating.category);
+
+        if (blockedCategories.length > 0) {
+          throw new Error(`Gemini API blocked response due to safety settings in categories: ${blockedCategories.join(', ')}`);
+        }
+      }
+
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (generatedText) {
+        return generatedText;
+      } else {
+        console.error('Unexpected or empty Gemini API response structure:', JSON.stringify(data, null, 2));
+        throw new Error('Gemini API returned an unexpected or empty response (no valid text found in candidates).');
+      }
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error calling Gemini API:', errorMessage);
+      return "I apologize, Zara the Strategist is currently facing a technical challenge and cannot provide a response. Please check your internet connection or try again later.";
+    }
+  }
+
+  async generateAlgorandInsight(): Promise<string> {
+    const insights: string[] = [
+      "The Algorand blockchain's Pure Proof of Stake consensus mechanism offers immediate finality and high throughput, making it ideal for DeFi applications.",
+      "ALGO's tokenomics include participation rewards and governance voting, creating strong incentives for long-term holding and network participation.",
+      "Algorand's carbon-negative blockchain and institutional partnerships position it well for ESG-focused investment strategies.",
+      "The Algorand Virtual Machine supports both TEAL smart contracts and PyTeal for more complex applications, offering flexibility for developers.",
+      "State Proofs on Algorand enable trustless cross-chain communication, which could be a significant competitive advantage in the multi-chain future."
+    ];
+
+    return insights[Math.floor(Math.random() * insights.length)];
+  }
+}
+
+export const geminiService = new GeminiService();
