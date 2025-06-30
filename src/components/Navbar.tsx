@@ -61,10 +61,27 @@ const Navbar: React.FC = () => {
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
             <WalletButton size="medium" />
+            <a 
+              href="https://bolt.new" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-sm font-medium"
+            >
+              <span>Built with</span>
+              <span className="font-bold text-blue-600">Bolt.new</span>
+            </a>
           </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
+            <a 
+              href="https://bolt.new" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center space-x-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-xs font-medium"
+            >
+              <span className="font-bold text-blue-600">Bolt.new</span>
+            </a>
             <WalletButton size="small" />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

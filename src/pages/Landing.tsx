@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCharacters } from '../hooks/useCharacters';
-import { TrendingUp, Users, Gamepad2, Wallet, Bot, Zap, Sparkles, MessageCircle, Crown, Heart, Dice6, ArrowRight, Star, ChevronRight, Play, Shield, Layers, Cpu } from 'lucide-react';
+import { TrendingUp, Users, Gamepad2, Wallet, Bot, Zap, Sparkles, MessageCircle, Crown, Heart, Dice6, ArrowRight, Star, ChevronRight, Play, Shield, Layers, Cpu, ExternalLink } from 'lucide-react';
 import { 
   BoldNavbar, 
   BoldNavbarMobile, 
@@ -623,9 +623,20 @@ const Landing: React.FC = () => {
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="text-sm text-gray-500"
+              className="flex items-center space-x-4"
             >
-              © 2024 Algo Agent. All rights reserved.
+              <div className="text-sm text-gray-500">
+                © 2024 Algo Agent. All rights reserved.
+              </div>
+              <a 
+                href="https://bolt.new" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center space-x-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors text-sm font-medium"
+              >
+                <span className="text-white">Built with</span>
+                <span className="font-bold text-blue-400">Bolt.new</span>
+              </a>
             </motion.div>
           </div>
         </div>

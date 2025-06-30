@@ -20,7 +20,8 @@ import {
   Menu,
   X,
   Sun,
-  Moon
+  Moon,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '../ui';
 import WalletButton from '../components/WalletButton';
@@ -218,6 +219,21 @@ const Dashboard: React.FC = () => {
               )}
             </button>
 
+            {/* Built with Bolt.new */}
+            <a
+              href="https://bolt.new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-white hover:bg-default-300/20"
+            >
+              <ExternalLink className="w-5 h-5 flex-shrink-0" />
+              {!sidebarCollapsed && (
+                <span className="font-['Montserrat'] text-[14px] font-[500]">
+                  Built with <span className="font-bold text-blue-400">Bolt.new</span>
+                </span>
+              )}
+            </a>
+
             {bottomMenuItems.map((item) => (
               <button
                 key={item.path}
@@ -315,6 +331,19 @@ const Dashboard: React.FC = () => {
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </span>
             </button>
+
+            {/* Built with Bolt.new */}
+            <a
+              href="https://bolt.new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-white hover:bg-default-300/20"
+            >
+              <ExternalLink className="w-5 h-5 flex-shrink-0" />
+              <span className="font-['Montserrat'] text-[14px] font-[500]">
+                Built with <span className="font-bold text-blue-400">Bolt.new</span>
+              </span>
+            </a>
 
             {bottomMenuItems.map((item) => (
               <button
