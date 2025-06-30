@@ -48,15 +48,23 @@ export const useGeminiChat = (characterId: string) => {
     } catch (error) {
       console.error('Error generating AI response:', error);
       
-      const errorMessage: ChatMessage = {
+      let errorContent = "I apologize, but I'm experiencing some technical difficulties. As your Algorand strategist, I'm here to help with blockchain analysis, trading insights, and DeFi strategies. Please try your question again.";
+      
+      // Check if the error is related to API quota or rate limits
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('quota') || errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+        errorContent = "⚠️ **API Quota Exceeded**: I've reached the usage limit for the Gemini API. Please check your Google Cloud project or Gemini API console for details about your plan and usage limits. You may need to upgrade your plan or wait for the quota to reset.";
+      }
+      
+      const errorMessageObj: ChatMessage = {
         id: (Date.now() + 1).toString(),
         characterId,
-        content: "I apologize, but I'm experiencing some technical difficulties. As your Algorand strategist, I'm here to help with blockchain analysis, trading insights, and DeFi strategies. Please try your question again.",
+        content: errorContent,
         timestamp: new Date().toISOString(),
         isUser: false,
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMessageObj]);
     } finally {
       setIsTyping(false);
     }
@@ -100,6 +108,24 @@ export const useGeminiChat = (characterId: string) => {
       setMessages(prev => [...prev, insightMessage]);
     } catch (error) {
       console.error('Error generating insight:', error);
+      
+      let errorContent = "I apologize, but I couldn't generate an insight at the moment. Please try again later.";
+      
+      // Check if the error is related to API quota or rate limits
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('quota') || errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+        errorContent = "⚠️ **API Quota Exceeded**: I've reached the usage limit for the Gemini API. Please check your Google Cloud project or Gemini API console for details about your plan and usage limits.";
+      }
+      
+      const errorMessageObj: ChatMessage = {
+        id: Date.now().toString(),
+        characterId,
+        content: errorContent,
+        timestamp: new Date().toISOString(),
+        isUser: false,
+      };
+
+      setMessages(prev => [...prev, errorMessageObj]);
     } finally {
       setIsTyping(false);
     }
