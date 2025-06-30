@@ -10,10 +10,12 @@ import {
   TrendingUp,
   Crown,
   Heart,
-  Dice6
+  Dice6,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '../ui';
 import { Character } from '../types';
+import { useWallet } from '../hooks/useWallet';
 
 interface OverviewSectionProps {
   characters: Character[];
@@ -32,6 +34,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
   stats,
   setCurrentView
 }) => {
+  const { isConnected, balance } = useWallet();
   const recentAgents = characters.slice(0, 3);
 
   return (
@@ -45,6 +48,55 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
           Welcome back! Here's what's happening with your agents.
         </p>
       </div>
+
+      {/* Wallet Connection Alert */}
+      {!isConnected && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-brand-900/20 border border-brand-600/30 rounded-lg"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-['Montserrat'] text-[14px] font-[600] text-brand-400 mb-1">
+                Connect Your Wallet
+              </h4>
+              <p className="font-['Montserrat'] text-[13px] text-white/60 mb-3">
+                Connect your Algorand wallet to create and manage AI agents on the blockchain.
+              </p>
+              <Button
+                variant="brand-primary"
+                size="small"
+                onClick={() => {/* Wallet connection handled by WalletButton */}}
+              >
+                Connect Wallet
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Balance Warning */}
+      {isConnected && balance < 1000 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-warning-900/20 border border-warning-600/30 rounded-lg"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-warning-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-['Montserrat'] text-[14px] font-[600] text-warning-400 mb-1">
+                Insufficient Balance
+              </h4>
+              <p className="font-['Montserrat'] text-[13px] text-white/60">
+                You need at least 1000 ALGO to create new agents. Current balance: {balance.toFixed(2)} ALGO
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -132,6 +184,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
                     size={window.innerWidth < 640 ? "small" : "medium"}
                     onClick={() => setCurrentView('create')}
                     icon={<Plus className="w-4 h-4" />}
+                    disabled={!isConnected || balance < 1000}
                   >
                     <span className="hidden sm:inline">Create Agent</span>
                     <span className="sm:hidden">Create</span>
@@ -155,6 +208,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
                 onClick={() => setCurrentView('create')}
                 icon={<Plus className="w-4 h-4 sm:w-5 sm:h-5" />}
                 className="w-full justify-start"
+                disabled={!isConnected || balance < 1000}
               >
                 <span className="hidden sm:inline">Create New Agent</span>
                 <span className="sm:hidden">Create Agent</span>
@@ -188,39 +242,49 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
               Recent Activity
             </h2>
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-start gap-2 sm:gap-3">
-                <div className="w-2 h-2 bg-success-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="font-['Montserrat'] text-[13px] sm:text-[14px] font-[500] text-white">
-                    Agent deployed
-                  </p>
-                  <p className="font-['Montserrat'] text-[11px] sm:text-[12px] text-white/60">
-                    2 hours ago
+              {characters.length > 0 ? (
+                <>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-2 h-2 bg-success-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-['Montserrat'] text-[13px] sm:text-[14px] font-[500] text-white">
+                        Agent "{characters[characters.length - 1]?.name}" created
+                      </p>
+                      <p className="font-['Montserrat'] text-[11px] sm:text-[12px] text-white/60">
+                        Recently
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-brand-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-['Montserrat'] text-[14px] font-[500] text-white">
+                        New interaction received
+                      </p>
+                      <p className="font-['Montserrat'] text-[12px] text-white/60">
+                        5 hours ago
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-warning-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-['Montserrat'] text-[14px] font-[500] text-white">
+                        Token swap completed
+                      </p>
+                      <p className="font-['Montserrat'] text-[12px] text-white/60">
+                        1 day ago
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="font-['Montserrat'] text-[13px] text-white/60">
+                    No recent activity. Create your first agent to get started!
                   </p>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-brand-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="font-['Montserrat'] text-[14px] font-[500] text-white">
-                    New interaction received
-                  </p>
-                  <p className="font-['Montserrat'] text-[12px] text-white/60">
-                    5 hours ago
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-warning-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="font-['Montserrat'] text-[14px] font-[500] text-white">
-                    Token swap completed
-                  </p>
-                  <p className="font-['Montserrat'] text-[12px] text-white/60">
-                    1 day ago
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -229,4 +293,4 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
   );
 };
 
-export default OverviewSection; 
+export default OverviewSection;

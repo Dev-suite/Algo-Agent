@@ -10,9 +10,14 @@ import {
   Zap,
   ArrowLeft,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  AlertCircle,
+  Wallet,
+  Bot
 } from 'lucide-react';
 import { Button, Switch } from '../ui';
+import { useWallet } from '../hooks/useWallet';
+import { useCharacters } from '../hooks/useCharacters';
 
 const agentTypes = [
   {
@@ -49,6 +54,8 @@ interface CreateAgentSectionProps {
 }
 
 const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView }) => {
+  const { isConnected, account, balance, formatBalance } = useWallet();
+  const { createCharacter } = useCharacters();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedType, setSelectedType] = useState<string>('');
   const [agentData, setAgentData] = useState({
@@ -64,27 +71,116 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
   });
   const [isCreating, setIsCreating] = useState(false);
   const [creationComplete, setCreationComplete] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const selectedAgentType = agentTypes.find(type => type.id === selectedType);
 
+  // Validation functions
+  const validateStep = (step: number): boolean => {
+    const errors: string[] = [];
+
+    switch (step) {
+      case 1:
+        if (!selectedType) {
+          errors.push('Please select an agent type');
+        }
+        break;
+      case 2:
+        if (!agentData.name.trim()) {
+          errors.push('Agent name is required');
+        }
+        if (agentData.name.length < 3) {
+          errors.push('Agent name must be at least 3 characters');
+        }
+        if (!agentData.description.trim()) {
+          errors.push('Agent description is required');
+        }
+        if (agentData.description.length < 10) {
+          errors.push('Description must be at least 10 characters');
+        }
+        if (!agentData.personality.trim()) {
+          errors.push('Personality traits are required');
+        }
+        break;
+      case 3:
+        if (agentData.generateToken) {
+          if (!agentData.tokenName.trim()) {
+            errors.push('Token name is required when generating token');
+          }
+          if (!agentData.tokenSymbol.trim()) {
+            errors.push('Token symbol is required when generating token');
+          }
+          if (agentData.tokenSymbol.length < 2 || agentData.tokenSymbol.length > 8) {
+            errors.push('Token symbol must be 2-8 characters');
+          }
+        }
+        break;
+      case 4:
+        if (!isConnected) {
+          errors.push('Wallet connection is required to deploy agent');
+        }
+        if (balance < 1000) {
+          errors.push('Insufficient ALGO balance. Minimum 1000 ALGO required');
+        }
+        break;
+    }
+
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
+
   const handleNext = () => {
-    if (currentStep < 4) {
-      setCurrentStep(currentStep + 1);
+    if (validateStep(currentStep)) {
+      if (currentStep < 4) {
+        setCurrentStep(currentStep + 1);
+      }
     }
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      setValidationErrors([]);
     }
   };
 
   const handleCreateAgent = async () => {
+    if (!validateStep(4)) return;
+
     setIsCreating(true);
-    // Simulate agent creation process
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setIsCreating(false);
-    setCreationComplete(true);
+    
+    try {
+      // Simulate blockchain deployment process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Generate avatar URL based on agent type
+      const avatarUrls = {
+        influencer: 'https://images.pexels.com/photos/3785079/pexels-photo-3785079.jpeg?auto=compress&cs=tinysrgb&w=400',
+        companion: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400',
+        gamemaster: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400'
+      };
+
+      // Create the character
+      const newCharacter = await createCharacter({
+        name: agentData.name,
+        avatar: agentData.avatar || avatarUrls[selectedType as keyof typeof avatarUrls],
+        personality: agentData.personality,
+        backstory: agentData.description,
+        skills: agentData.personality.split(',').map(s => s.trim()).filter(s => s.length > 0),
+        agentType: selectedType as 'influencer' | 'companion' | 'gamemaster',
+        walletAddress: account?.address,
+        voiceId: agentData.voiceEnabled ? `${agentData.name.toLowerCase()}_${agentData.voiceType}` : undefined
+      });
+
+      console.log('Created new agent:', newCharacter);
+      
+      setIsCreating(false);
+      setCreationComplete(true);
+    } catch (error) {
+      console.error('Failed to create agent:', error);
+      setValidationErrors(['Failed to create agent. Please try again.']);
+      setIsCreating(false);
+    }
   };
 
   const resetCreateAgent = () => {
@@ -102,6 +198,7 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
       tokenName: '',
       tokenSymbol: ''
     });
+    setValidationErrors([]);
   };
 
   const renderCreateAgentStep = () => {
@@ -200,7 +297,7 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
             <div className="flex w-full max-w-[768px] flex-col gap-4 sm:gap-6">
               <div className="flex w-full flex-col gap-3">
                 <span className="font-['Montserrat'] text-[16px] font-[600] text-white">
-                  Agent Name
+                  Agent Name *
                 </span>
                 <input
                   type="text"
@@ -213,7 +310,7 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
 
               <div className="flex w-full flex-col gap-3">
                 <span className="font-['Montserrat'] text-[16px] font-[600] text-white">
-                  Description
+                  Description *
                 </span>
                 <textarea
                   value={agentData.description}
@@ -226,7 +323,7 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
 
               <div className="flex w-full flex-col gap-3">
                 <span className="font-['Montserrat'] text-[16px] font-[600] text-white">
-                  Personality Traits
+                  Personality Traits *
                 </span>
                 <input
                   type="text"
@@ -235,6 +332,9 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
                   placeholder="e.g., Friendly, Professional, Humorous, Creative"
                   className="w-full px-4 py-3 font-['Montserrat'] text-[14px] bg-neutral-700 border border-amber-800/30 rounded-[12px] text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
                 />
+                <p className="font-['Montserrat'] text-[12px] text-white/60">
+                  Separate multiple traits with commas
+                </p>
               </div>
 
               <div className="flex w-full flex-col gap-3">
@@ -249,13 +349,18 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
                       <Upload className="w-6 h-6 text-white/40" />
                     )}
                   </div>
-                  <Button
-                    variant="neutral-secondary"
-                    onClick={() => {}}
-                    icon={<Upload className="w-4 h-4" />}
-                  >
-                    Upload Image
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="neutral-secondary"
+                      onClick={() => {}}
+                      icon={<Upload className="w-4 h-4" />}
+                    >
+                      Upload Image
+                    </Button>
+                    <p className="font-['Montserrat'] text-[12px] text-white/60">
+                      Optional: A default avatar will be assigned
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -342,7 +447,7 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
                     <div className="flex w-full flex-col sm:flex-row gap-4">
                       <div className="flex flex-1 flex-col gap-3">
                         <span className="font-['Montserrat'] text-[14px] font-[600] text-white">
-                          Token Name
+                          Token Name *
                         </span>
                         <input
                           type="text"
@@ -354,13 +459,14 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
                       </div>
                       <div className="flex flex-1 flex-col gap-3">
                         <span className="font-['Montserrat'] text-[14px] font-[600] text-white">
-                          Token Symbol
+                          Token Symbol *
                         </span>
                         <input
                           type="text"
                           value={agentData.tokenSymbol}
                           onChange={(e) => setAgentData({...agentData, tokenSymbol: e.target.value.toUpperCase()})}
                           placeholder="AGT"
+                          maxLength={8}
                           className="w-full px-4 py-3 font-['Montserrat'] text-[14px] bg-neutral-600 border border-neutral-500 rounded-[12px] text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-brand-600"
                         />
                       </div>
@@ -385,6 +491,54 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
             </div>
 
             <div className="flex w-full max-w-[768px] flex-col gap-4 sm:gap-6">
+              {/* Wallet Status */}
+              <div className="flex w-full flex-col gap-4 rounded-[20px] border border-amber-800/30 bg-neutral-700 px-6 py-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex w-10 h-10 items-center justify-center rounded-lg bg-neutral-600">
+                    <Wallet className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-['Montserrat'] text-[20px] font-[700] text-white">
+                    Wallet Status
+                  </span>
+                </div>
+
+                {isConnected ? (
+                  <div className="flex items-center justify-between p-4 bg-success-900/20 border border-success-600/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-success-400" />
+                      <div>
+                        <p className="font-['Montserrat'] text-[14px] font-[600] text-white">
+                          Wallet Connected
+                        </p>
+                        <p className="font-['Montserrat'] text-[12px] text-white/60">
+                          Balance: {formatBalance(balance)} ALGO
+                        </p>
+                      </div>
+                    </div>
+                    {balance >= 1000 ? (
+                      <CheckCircle className="w-5 h-5 text-success-400" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-warning-400" />
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-4 bg-error-900/20 border border-error-600/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-error-400" />
+                      <div>
+                        <p className="font-['Montserrat'] text-[14px] font-[600] text-white">
+                          Wallet Not Connected
+                        </p>
+                        <p className="font-['Montserrat'] text-[12px] text-white/60">
+                          Please connect your wallet to deploy
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Agent Summary */}
               <div className="flex w-full flex-col gap-6 rounded-[20px] border border-amber-800/30 bg-neutral-700 px-6 py-6">
                 <div className="flex items-center gap-4">
                   {selectedAgentType && (
@@ -503,7 +657,7 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
               Agent Created Successfully!
             </span>
             <span className="font-['Montserrat'] text-[16px] sm:text-[18px] lg:text-[20px] font-[500] text-white/80 text-center px-4">
-              Your AI agent is now live on the Algorand blockchain
+              Your AI agent "{agentData.name}" is now live on the Algorand blockchain
             </span>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
@@ -548,6 +702,35 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
         </div>
       </div>
 
+      {/* Validation Errors */}
+      {validationErrors.length > 0 && (
+        <div className="px-4 sm:px-6">
+          <div className="max-w-[1024px] mx-auto mb-4">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-error-900/20 border border-error-600/30 rounded-lg"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-error-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-['Montserrat'] text-[14px] font-[600] text-error-400 mb-2">
+                    Please fix the following issues:
+                  </h4>
+                  <ul className="space-y-1">
+                    {validationErrors.map((error, index) => (
+                      <li key={index} className="font-['Montserrat'] text-[13px] text-error-300">
+                        • {error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
+
       {/* Step Content */}
       <div className="flex-1 bg-brand-900">
         <AnimatePresence mode="wait">
@@ -582,7 +765,7 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
             <Button
               size={window.innerWidth < 640 ? "medium" : "large"}
               onClick={handleCreateAgent}
-              disabled={isCreating || !selectedType || !agentData.name}
+              disabled={isCreating || !isConnected || balance < 1000 || validationErrors.length > 0}
               icon={isCreating ? (
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
@@ -597,7 +780,7 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
             <Button
               size={window.innerWidth < 640 ? "medium" : "large"}
               onClick={handleNext}
-              disabled={currentStep === 1 && !selectedType}
+              disabled={(currentStep === 1 && !selectedType) || validationErrors.length > 0}
               iconRight={<ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />}
               className="flex-shrink-0"
             >
@@ -610,4 +793,4 @@ const CreateAgentSection: React.FC<CreateAgentSectionProps> = ({ setCurrentView 
   );
 };
 
-export default CreateAgentSection; 
+export default CreateAgentSection;

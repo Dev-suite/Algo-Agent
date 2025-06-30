@@ -87,50 +87,134 @@ export const useCharacters = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setCharacters(mockCharacters);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const createCharacter = async (characterData: Partial<Character>) => {
-    const newCharacter: Character = {
-      id: Date.now().toString(),
-      name: characterData.name || 'New Character',
-      avatar: characterData.avatar || 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400',
-      personality: characterData.personality || 'Mysterious',
-      backstory: characterData.backstory || 'A newly created AI character',
-      skills: characterData.skills || ['Basic Skills'],
-      level: 1,
-      experience: 0,
-      status: 'idle',
-      lastActivity: 'Just created',
-      tokenBalance: 0,
-      gamesPlayed: 0,
-      winRate: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-      traits: {
-        intelligence: Math.floor(Math.random() * 40) + 60,
-        creativity: Math.floor(Math.random() * 40) + 60,
-        humor: Math.floor(Math.random() * 40) + 60,
-        empathy: Math.floor(Math.random() * 40) + 60,
-        aggression: Math.floor(Math.random() * 40) + 30
+    // Load characters from localStorage or use mock data
+    const loadCharacters = () => {
+      try {
+        const stored = localStorage.getItem('chainAgentCharacters');
+        if (stored) {
+          const parsedCharacters = JSON.parse(stored);
+          setCharacters(parsedCharacters);
+        } else {
+          setCharacters(mockCharacters);
+          localStorage.setItem('chainAgentCharacters', JSON.stringify(mockCharacters));
+        }
+      } catch (error) {
+        console.error('Failed to load characters:', error);
+        setCharacters(mockCharacters);
+      } finally {
+        setLoading(false);
       }
     };
 
-    setCharacters(prev => [...prev, newCharacter]);
+    // Simulate loading delay
+    setTimeout(loadCharacters, 1000);
+  }, []);
+
+  const saveCharacters = (newCharacters: Character[]) => {
+    try {
+      localStorage.setItem('chainAgentCharacters', JSON.stringify(newCharacters));
+    } catch (error) {
+      console.error('Failed to save characters:', error);
+    }
+  };
+
+  const createCharacter = async (characterData: Partial<Character>): Promise<Character> => {
+    // Generate unique ID
+    const id = `agent_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Generate random stats based on agent type
+    const generateTraits = (agentType?: string) => {
+      const baseTraits = {
+        intelligence: Math.floor(Math.random() * 30) + 70,
+        creativity: Math.floor(Math.random() * 30) + 70,
+        humor: Math.floor(Math.random() * 40) + 60,
+        empathy: Math.floor(Math.random() * 40) + 60,
+        aggression: Math.floor(Math.random() * 40) + 30
+      };
+
+      // Adjust traits based on agent type
+      switch (agentType) {
+        case 'influencer':
+          baseTraits.creativity += 10;
+          baseTraits.humor += 15;
+          baseTraits.empathy += 10;
+          break;
+        case 'companion':
+          baseTraits.empathy += 20;
+          baseTraits.humor += 10;
+          baseTraits.aggression -= 10;
+          break;
+        case 'gamemaster':
+          baseTraits.intelligence += 15;
+          baseTraits.creativity += 15;
+          baseTraits.aggression += 5;
+          break;
+      }
+
+      // Ensure traits don't exceed 100
+      Object.keys(baseTraits).forEach(key => {
+        baseTraits[key as keyof typeof baseTraits] = Math.min(100, baseTraits[key as keyof typeof baseTraits]);
+      });
+
+      return baseTraits;
+    };
+
+    const newCharacter: Character = {
+      id,
+      name: characterData.name || 'New Agent',
+      avatar: characterData.avatar || 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400',
+      personality: characterData.personality || 'Friendly, Helpful',
+      backstory: characterData.backstory || 'A newly created AI agent ready to assist and interact.',
+      skills: characterData.skills || ['Communication', 'Problem Solving'],
+      level: 1,
+      experience: 0,
+      status: 'active',
+      lastActivity: 'Just created',
+      voiceId: characterData.voiceId,
+      walletAddress: characterData.walletAddress,
+      tokenBalance: Math.floor(Math.random() * 500) + 100, // Random starting balance
+      gamesPlayed: 0,
+      winRate: 0,
+      createdAt: new Date().toISOString().split('T')[0],
+      agentType: characterData.agentType || 'companion',
+      traits: generateTraits(characterData.agentType)
+    };
+
+    // Add to characters list
+    const updatedCharacters = [...characters, newCharacter];
+    setCharacters(updatedCharacters);
+    saveCharacters(updatedCharacters);
+
+    // Simulate blockchain deployment delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
     return newCharacter;
   };
 
   const updateCharacter = (id: string, updates: Partial<Character>) => {
-    setCharacters(prev => 
-      prev.map(char => char.id === id ? { ...char, ...updates } : char)
+    const updatedCharacters = characters.map(char => 
+      char.id === id ? { ...char, ...updates } : char
     );
+    setCharacters(updatedCharacters);
+    saveCharacters(updatedCharacters);
   };
 
   const deleteCharacter = (id: string) => {
-    setCharacters(prev => prev.filter(char => char.id !== id));
+    const updatedCharacters = characters.filter(char => char.id !== id);
+    setCharacters(updatedCharacters);
+    saveCharacters(updatedCharacters);
+  };
+
+  const getCharacterById = (id: string): Character | undefined => {
+    return characters.find(char => char.id === id);
+  };
+
+  const getCharactersByType = (type: 'influencer' | 'companion' | 'gamemaster'): Character[] => {
+    return characters.filter(char => char.agentType === type);
+  };
+
+  const getActiveCharacters = (): Character[] => {
+    return characters.filter(char => char.status === 'active');
   };
 
   return {
@@ -138,6 +222,9 @@ export const useCharacters = () => {
     loading,
     createCharacter,
     updateCharacter,
-    deleteCharacter
+    deleteCharacter,
+    getCharacterById,
+    getCharactersByType,
+    getActiveCharacters
   };
 };
