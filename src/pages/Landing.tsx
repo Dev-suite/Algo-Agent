@@ -401,24 +401,7 @@ const Landing: React.FC = () => {
                 transition={{ duration: 0.8 }}
                 className="flex h-192 w-full flex-none flex-col items-center justify-center gap-2 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600/20 to-brand-400/20 backdrop-blur-md border border-brand-500/30"
               >
-                <motion.div
-                  animate={{
-                    y: [0, -10, 0],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="w-full h-full flex items-center justify-center"
-                >
-                  <img
-                    className="w-full max-w-2xl object-contain"
-                    src="https://res.cloudinary.com/subframe/image/upload/v1723780611/uploads/302/lbaowphtt6gfvgjr10b4.png"
-                    alt="Algo Agent Platform"
-                  />
-                </motion.div>
-              </motion.div>
+                
 
               <motion.span
                 initial={{ opacity: 0, y: 30 }}
