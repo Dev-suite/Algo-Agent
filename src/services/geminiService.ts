@@ -34,49 +34,41 @@ interface GeminiResponse {
 class GeminiService {
   private apiKey: string;
   // Base URL for the Gemini models API
-  // Changed to a more general models URL, specific model and method will be appended.
   private modelsBaseUrl: string = 'https://generativelanguage.googleapis.com/v1beta/models';
-  private defaultModel: string = 'gemini-pro'; // Default model for generateContent
+
+  // *** IMPORTANT FIX HERE: Update the default model name ***
+  // 'gemini-pro' is often deprecated or not directly accessible under that name anymore.
+  // Use a currently supported model, e.g., 'gemini-1.5-pro', 'gemini-1.5-flash',
+  // or 'gemini-pro-latest' if available in your region/project.
+  private defaultModel: string = 'gemini-1.5-pro'; // Changed from 'gemini-pro'
 
   constructor() {
-    // Attempt to get the API key from environment variables.
-    // Vite exposes variables prefixed with VITE_ to the client-side.
-    // process.env is typically for Node.js server-side environments.
     const key = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
     if (!key) {
-      // It's better to throw an error immediately during instantiation
-      // if the key is critical for the service to function.
-      // This prevents runtime errors deeper in the call stack.
       throw new Error('Gemini API key is not configured. Please set VITE_GEMINI_API_KEY environment variable.');
     }
     this.apiKey = key;
   }
 
   /**
-   * Generates a response from the Gemini Pro model based on a prompt and character context.
+   * Generates a response from the Gemini model based on a prompt and character context.
    * @param prompt The user's question or input.
    * @param characterContext Optional additional context for the AI character.
-   * @param model Optional: Specify a different Gemini model if needed (defaults to 'gemini-pro').
+   * @param model Optional: Specify a different Gemini model if needed (defaults to 'gemini-1.5-pro').
    * @returns A promise that resolves to the generated text response.
    * @throws An error if the API call fails or the response is invalid.
    */
   async generateResponse(
     prompt: string,
     characterContext?: string,
-    model: string = this.defaultModel // Allow overriding the default model
+    model: string = this.defaultModel // Use the updated default model
   ): Promise<string> {
-    // The constructor already checks the API key; this check is redundant if you always
-    // instantiate the service. However, it provides a fallback message if the service
-    // was somehow instantiated without a key and then called.
     if (!this.apiKey) {
-      // This case should ideally be caught by the constructor's error,
-      // but it's a safe guard.
       return "I apologize, but the AI service is not properly configured. Please contact the administrator to set up the API key.";
     }
 
     try {
-      // Construct the full system prompt, including the character definition and user question.
       const systemPrompt = `You are Zara the Strategist, an AI agent specialized in Algorand blockchain technology. You are analytical, strategic, and competitive with expertise in:
 
 - Algorand blockchain architecture and consensus mechanism
@@ -102,6 +94,7 @@ User question: ${prompt}
 Respond as Zara the Strategist with expertise in Algorand, providing helpful, accurate, and strategic insights.`;
 
       // Construct the full API URL for the specified model's generateContent method.
+      // Now using the variable 'model' which defaults to 'gemini-1.5-pro'
       const apiUrl = `${this.modelsBaseUrl}/${model}:generateContent?key=${this.apiKey}`;
 
       const response = await fetch(apiUrl, {
@@ -130,30 +123,25 @@ Respond as Zara the Strategist with expertise in Algorand, providing helpful, ac
         }),
       });
 
-      // Check if the HTTP response itself was successful (status code 2xx).
       if (!response.ok) {
-        // Attempt to read the error body for more details if available
         const errorBody = await response.text();
         let errorMessage = `Gemini API error: ${response.status} ${response.statusText}`;
         try {
             const errorJson = JSON.parse(errorBody);
-            // If the error body is JSON, try to extract a more specific message
             if (errorJson.error && errorJson.error.message) {
                 errorMessage += ` - ${errorJson.error.message}`;
             } else {
-                errorMessage += ` - ${errorBody}`; // Fallback to raw body if not a standard error JSON
+                errorMessage += ` - ${errorBody}`;
             }
         } catch (e) {
-            errorMessage += ` - ${errorBody}`; // If not JSON, use raw body
+            errorMessage += ` - ${errorBody}`;
         }
         throw new Error(errorMessage);
       }
 
-      // Parse the JSON response from the API.
       const data: GeminiResponse = await response.json();
 
       // --- Enhanced Response Validation ---
-      // Check for safety blocks first
       if (data.promptFeedback && data.promptFeedback.safetyRatings) {
         const blockedCategories = data.promptFeedback.safetyRatings
           .filter(rating => rating.blocked)
@@ -164,35 +152,23 @@ Respond as Zara the Strategist with expertise in Algorand, providing helpful, ac
         }
       }
 
-      // Validate the structure of the successful response and extract text.
-      // Using optional chaining (?.) and nullish coalescing (??) for robustness.
       const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (generatedText) {
         return generatedText;
       } else {
-        // Log the full response for debugging if it doesn't match the expected structure.
         console.error('Unexpected or empty Gemini API response structure:', JSON.stringify(data, null, 2));
         throw new Error('Gemini API returned an unexpected or empty response (no valid text found in candidates).');
       }
-    } catch (error: any) { // Catch any errors thrown during the fetch or parsing process
-      // Distinguish between API errors and other network/parsing errors
+    } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Error calling Gemini API:', errorMessage);
-
-      // Provide a user-friendly message without exposing internal errors directly to the user.
-      // Customize this message based on your application's needs.
       return "I apologize, Zara the Strategist is currently facing a technical challenge and cannot provide a response. Please check your internet connection or try again later.";
     }
   }
 
-  /**
-   * Generates a random Algorand-related insight.
-   * This method doesn't interact with the Gemini API; it's a local utility.
-   * @returns A random string insight.
-   */
   async generateAlgorandInsight(): Promise<string> {
-    const insights: string[] = [ // Explicitly type as string array
+    const insights: string[] = [
       "The Algorand blockchain's Pure Proof of Stake consensus mechanism offers immediate finality and high throughput, making it ideal for DeFi applications.",
       "ALGO's tokenomics include participation rewards and governance voting, creating strong incentives for long-term holding and network participation.",
       "Algorand's carbon-negative blockchain and institutional partnerships position it well for ESG-focused investment strategies.",
@@ -204,6 +180,4 @@ Respond as Zara the Strategist with expertise in Algorand, providing helpful, ac
   }
 }
 
-// Export a singleton instance of the service.
-// This ensures only one instance of GeminiService is created and used throughout the application.
 export const geminiService = new GeminiService();
