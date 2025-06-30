@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -44,6 +44,24 @@ const MyAgentsSection: React.FC<MyAgentsSectionProps> = ({
   const [selectedAgent, setSelectedAgent] = useState<Character | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(null);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   // Filter and sort characters
   const filteredCharacters = characters
@@ -102,6 +120,7 @@ const MyAgentsSection: React.FC<MyAgentsSectionProps> = ({
       status: newStatus,
       lastActivity: newStatus === 'active' ? 'Just activated' : 'Just deactivated'
     });
+    setShowDropdown(null);
   };
 
   const handleDeleteAgent = async (character: Character) => {
@@ -123,6 +142,10 @@ const MyAgentsSection: React.FC<MyAgentsSectionProps> = ({
       setShowSettingsModal(false);
       setSelectedAgent(null);
     }
+  };
+
+  const handleDropdownToggle = (characterId: string) => {
+    setShowDropdown(showDropdown === characterId ? null : characterId);
   };
 
   const stats = [
@@ -157,7 +180,7 @@ const MyAgentsSection: React.FC<MyAgentsSectionProps> = ({
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 relative">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
@@ -297,64 +320,70 @@ const MyAgentsSection: React.FC<MyAgentsSectionProps> = ({
                     </div>
                     
                     {/* More Options */}
-                    <div className="relative">
+                    <div className="relative" ref={showDropdown === character.id ? dropdownRef : null}>
                       <button
-                        onClick={() => setShowDropdown(showDropdown === character.id ? null : character.id)}
+                        onClick={() => handleDropdownToggle(character.id)}
                         className="p-1 hover:bg-neutral-700 rounded-lg transition-colors"
                       >
                         <MoreVertical className="w-4 h-4 text-white/60" />
                       </button>
                       
-                      {showDropdown === character.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="absolute right-0 top-full mt-1 w-48 bg-neutral-700 border border-amber-800/30 rounded-lg shadow-lg z-10"
-                        >
-                          <button
-                            onClick={() => handleSettingsClick(character)}
-                            className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-neutral-600 transition-colors text-left"
+                      <AnimatePresence>
+                        {showDropdown === character.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 top-full mt-1 w-48 bg-neutral-700 border border-amber-800/30 rounded-lg shadow-lg z-50"
                           >
-                            <Settings className="w-4 h-4 text-white/60" />
-                            <span className="font-['Montserrat'] text-[14px] text-white">Settings</span>
-                          </button>
-                          
-                          <button
-                            onClick={() => setCurrentView('chat')}
-                            className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-neutral-600 transition-colors text-left"
-                          >
-                            <MessageCircle className="w-4 h-4 text-white/60" />
-                            <span className="font-['Montserrat'] text-[14px] text-white">Chat</span>
-                          </button>
-                          
-                          <button
-                            onClick={() => handleStatusToggle(character)}
-                            className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-neutral-600 transition-colors text-left"
-                          >
-                            {character.status === 'active' ? (
-                              <>
-                                <Pause className="w-4 h-4 text-white/60" />
-                                <span className="font-['Montserrat'] text-[14px] text-white">Deactivate</span>
-                              </>
-                            ) : (
-                              <>
-                                <Play className="w-4 h-4 text-white/60" />
-                                <span className="font-['Montserrat'] text-[14px] text-white">Activate</span>
-                              </>
-                            )}
-                          </button>
-                          
-                          <div className="border-t border-amber-800/20 my-1" />
-                          
-                          <button
-                            onClick={() => handleDeleteAgent(character)}
-                            className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-error-900/20 transition-colors text-left text-error-400"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span className="font-['Montserrat'] text-[14px]">Delete</span>
-                          </button>
-                        </motion.div>
-                      )}
+                            <div className="py-1">
+                              <button
+                                onClick={() => handleSettingsClick(character)}
+                                className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-neutral-600 transition-colors text-left"
+                              >
+                                <Settings className="w-4 h-4 text-white/60" />
+                                <span className="font-['Montserrat'] text-[14px] text-white">Settings</span>
+                              </button>
+                              
+                              <button
+                                onClick={() => setCurrentView('chat')}
+                                className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-neutral-600 transition-colors text-left"
+                              >
+                                <MessageCircle className="w-4 h-4 text-white/60" />
+                                <span className="font-['Montserrat'] text-[14px] text-white">Chat</span>
+                              </button>
+                              
+                              <button
+                                onClick={() => handleStatusToggle(character)}
+                                className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-neutral-600 transition-colors text-left"
+                              >
+                                {character.status === 'active' ? (
+                                  <>
+                                    <Pause className="w-4 h-4 text-white/60" />
+                                    <span className="font-['Montserrat'] text-[14px] text-white">Deactivate</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-4 h-4 text-white/60" />
+                                    <span className="font-['Montserrat'] text-[14px] text-white">Activate</span>
+                                  </>
+                                )}
+                              </button>
+                              
+                              <div className="border-t border-amber-800/20 my-1" />
+                              
+                              <button
+                                onClick={() => handleDeleteAgent(character)}
+                                className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-error-900/20 transition-colors text-left text-error-400"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span className="font-['Montserrat'] text-[14px]">Delete</span>
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 </div>
@@ -458,14 +487,6 @@ const MyAgentsSection: React.FC<MyAgentsSectionProps> = ({
             <span className="sm:hidden">Create First Agent</span>
           </Button>
         </div>
-      )}
-
-      {/* Click outside to close dropdown */}
-      {showDropdown && (
-        <div 
-          className="fixed inset-0 z-30" 
-          onClick={() => setShowDropdown(null)}
-        />
       )}
 
       {/* Settings Modal */}
