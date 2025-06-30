@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -21,7 +21,9 @@ import {
   Award,
   Activity,
   Users,
-  Zap
+  Zap,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '../ui';
 import { useWallet } from '../hooks/useWallet';
@@ -33,45 +35,56 @@ const Profile: React.FC = () => {
   const { characters } = useCharacters();
   
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: 'Alex Chen',
-    email: 'alex.chen@example.com',
-    bio: 'AI enthusiast and blockchain developer passionate about creating intelligent agents on Algorand.',
-    location: 'San Francisco, CA',
-    website: 'https://alexchen.dev',
-    joinDate: '2024-01-15',
-    avatar: 'https://images.pexels.com/photos/3785079/pexels-photo-3785079.jpeg?auto=compress&cs=tinysrgb&w=400'
+  const [profile, setProfile] = useState(() => {
+    // Try to load profile from localStorage
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      return JSON.parse(savedProfile);
+    }
+    
+    // Default profile
+    return {
+      name: 'Alex Chen',
+      email: 'alex.chen@example.com',
+      bio: 'AI enthusiast and blockchain developer passionate about creating intelligent agents on Algorand.',
+      location: 'San Francisco, CA',
+      website: 'https://alexchen.dev',
+      joinDate: '2024-01-15',
+      avatar: 'https://images.pexels.com/photos/3785079/pexels-photo-3785079.jpeg?auto=compress&cs=tinysrgb&w=400'
+    };
   });
 
   const [editedProfile, setEditedProfile] = useState(profile);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
+  // Calculate stats
   const stats = [
     {
       icon: Bot,
       label: 'Agents Created',
       value: characters.length,
-      color: 'text-brand-600',
+      color: 'text-brand-600 dark:text-brand-400',
       bg: 'bg-brand-100 dark:bg-brand-900/20'
     },
     {
       icon: Activity,
       label: 'Total Interactions',
       value: characters.reduce((sum, c) => sum + c.gamesPlayed, 0),
-      color: 'text-success-600',
+      color: 'text-success-600 dark:text-success-400',
       bg: 'bg-success-100 dark:bg-success-900/20'
     },
     {
       icon: TrendingUp,
       label: 'Avg Win Rate',
-      value: `${(characters.reduce((sum, c) => sum + c.winRate, 0) / characters.length || 0).toFixed(1)}%`,
-      color: 'text-warning-600',
+      value: `${(characters.reduce((sum, c) => sum + c.winRate, 0) / (characters.length || 1)).toFixed(1)}%`,
+      color: 'text-warning-600 dark:text-warning-400',
       bg: 'bg-warning-100 dark:bg-warning-900/20'
     },
     {
       icon: Wallet,
       label: 'Portfolio Value',
       value: `${characters.reduce((sum, c) => sum + c.tokenBalance, 0).toFixed(2)} ALGO`,
-      color: 'text-purple-600',
+      color: 'text-purple-600 dark:text-purple-400',
       bg: 'bg-purple-100 dark:bg-purple-900/20'
     }
   ];
@@ -81,8 +94,8 @@ const Profile: React.FC = () => {
       icon: Trophy,
       title: 'First Agent',
       description: 'Created your first AI agent',
-      earned: true,
-      date: '2024-01-20'
+      earned: characters.length > 0,
+      date: characters.length > 0 ? '2024-01-20' : null
     },
     {
       icon: Star,
@@ -96,7 +109,7 @@ const Profile: React.FC = () => {
       title: 'Social Butterfly',
       description: 'Reached 1000 total interactions',
       earned: characters.reduce((sum, c) => sum + c.gamesPlayed, 0) >= 1000,
-      date: null
+      date: characters.reduce((sum, c) => sum + c.gamesPlayed, 0) >= 1000 ? '2024-03-01' : null
     },
     {
       icon: Zap,
@@ -134,9 +147,23 @@ const Profile: React.FC = () => {
     }
   ];
 
+  // Save profile to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('userProfile', JSON.stringify(profile));
+  }, [profile]);
+
   const handleSave = () => {
+    // Validate fields
+    if (!editedProfile.name.trim() || !editedProfile.email.trim()) {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+      return;
+    }
+    
     setProfile(editedProfile);
     setIsEditing(false);
+    setSaveStatus('success');
+    setTimeout(() => setSaveStatus('idle'), 3000);
   };
 
   const handleCancel = () => {
@@ -146,6 +173,15 @@ const Profile: React.FC = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setEditedProfile(prev => ({ ...prev, [field]: value }));
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
   };
 
   return (
@@ -204,7 +240,7 @@ const Profile: React.FC = () => {
                         type="text"
                         value={editedProfile.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
-                        className="font-['Montserrat'] text-[28px] font-[700] text-neutral-900 dark:text-white bg-transparent border-b-2 border-brand-600 focus:outline-none"
+                        className="font-['Montserrat'] text-[28px] font-[700] text-neutral-900 dark:text-white bg-transparent border-b-2 border-brand-600 focus:outline-none px-1 py-0.5"
                       />
                     ) : (
                       <h2 className="font-['Montserrat'] text-[28px] font-[700] text-neutral-900 dark:text-white">
@@ -212,7 +248,7 @@ const Profile: React.FC = () => {
                       </h2>
                     )}
                     
-                    <div className="flex items-center space-x-4 mt-2 text-neutral-600 dark:text-neutral-400">
+                    <div className="flex flex-wrap items-center gap-4 mt-2 text-neutral-600 dark:text-neutral-400">
                       <div className="flex items-center space-x-1">
                         <Mail className="w-4 h-4" />
                         {isEditing ? (
@@ -220,7 +256,7 @@ const Profile: React.FC = () => {
                             type="email"
                             value={editedProfile.email}
                             onChange={(e) => handleInputChange('email', e.target.value)}
-                            className="font-['Montserrat'] text-[14px] bg-transparent border-b border-neutral-300 dark:border-neutral-600 focus:outline-none focus:border-brand-600"
+                            className="font-['Montserrat'] text-[14px] bg-transparent border-b border-neutral-300 dark:border-neutral-600 focus:outline-none focus:border-brand-600 px-1"
                           />
                         ) : (
                           <span className="font-['Montserrat'] text-[14px]">{profile.email}</span>
@@ -290,7 +326,7 @@ const Profile: React.FC = () => {
                         type="text"
                         value={editedProfile.location}
                         onChange={(e) => handleInputChange('location', e.target.value)}
-                        className="font-['Montserrat'] text-[14px] bg-transparent border-b border-neutral-300 dark:border-neutral-600 focus:outline-none focus:border-brand-600"
+                        className="font-['Montserrat'] text-[14px] bg-transparent border-b border-neutral-300 dark:border-neutral-600 focus:outline-none focus:border-brand-600 px-1"
                       />
                     ) : (
                       <span className="font-['Montserrat'] text-[14px]">{profile.location}</span>
@@ -303,14 +339,14 @@ const Profile: React.FC = () => {
                         type="url"
                         value={editedProfile.website}
                         onChange={(e) => handleInputChange('website', e.target.value)}
-                        className="font-['Montserrat'] text-[14px] bg-transparent border-b border-neutral-300 dark:border-neutral-600 focus:outline-none focus:border-brand-600"
+                        className="font-['Montserrat'] text-[14px] bg-transparent border-b border-neutral-300 dark:border-neutral-600 focus:outline-none focus:border-brand-600 px-1"
                       />
                     ) : (
                       <a
                         href={profile.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-['Montserrat'] text-[14px] text-brand-600 hover:text-brand-700"
+                        className="font-['Montserrat'] text-[14px] text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
                       >
                         {profile.website}
                       </a>
@@ -321,6 +357,34 @@ const Profile: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Save Status Message */}
+        {saveStatus !== 'idle' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`p-4 rounded-lg ${
+              saveStatus === 'success' 
+                ? 'bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 text-success-800 dark:text-success-200' 
+                : 'bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 text-error-800 dark:text-error-200'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              {saveStatus === 'success' ? (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-['Montserrat'] text-[14px] font-[500]">Profile updated successfully</span>
+                </>
+              ) : (
+                <>
+                  <X className="w-5 h-5" />
+                  <span className="font-['Montserrat'] text-[14px] font-[500]">Failed to update profile. Please check all fields.</span>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -373,7 +437,7 @@ const Profile: React.FC = () => {
                   }`}>
                     <achievement.icon className={`w-6 h-6 ${
                       achievement.earned
-                        ? 'text-success-600'
+                        ? 'text-success-600 dark:text-success-400'
                         : 'text-neutral-400 dark:text-neutral-500'
                     }`} />
                   </div>
@@ -413,7 +477,7 @@ const Profile: React.FC = () => {
               {recentActivity.map((activity, index) => (
                 <div key={index} className="flex items-start space-x-4">
                   <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <activity.icon className="w-5 h-5 text-brand-600" />
+                    <activity.icon className="w-5 h-5 text-brand-600 dark:text-brand-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-['Montserrat'] text-[14px] font-[500] text-neutral-900 dark:text-white">
@@ -442,9 +506,25 @@ const Profile: React.FC = () => {
                   <label className="font-['Montserrat'] text-[14px] font-[500] text-neutral-600 dark:text-neutral-400">
                     Wallet Address
                   </label>
-                  <p className="font-['Montserrat'] text-[16px] font-[600] text-neutral-900 dark:text-white font-mono">
-                    {formatAddress(account?.address || '')}
-                  </p>
+                  <div className="flex items-center mt-1">
+                    <p className="font-['Montserrat'] text-[16px] font-[600] text-neutral-900 dark:text-white font-mono">
+                      {formatAddress(account?.address || '')}
+                    </p>
+                    <button 
+                      onClick={() => copyToClipboard(account?.address || '')}
+                      className="ml-2 p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md transition-colors"
+                    >
+                      <Copy className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                    </button>
+                    <a 
+                      href={`https://algoexplorer.io/address/${account?.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-1 p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                    </a>
+                  </div>
                 </div>
                 <div>
                   <label className="font-['Montserrat'] text-[14px] font-[500] text-neutral-600 dark:text-neutral-400">
@@ -454,12 +534,20 @@ const Profile: React.FC = () => {
                     {formatBalance(balance)} ALGO
                   </p>
                 </div>
+                <div>
+                  <label className="font-['Montserrat'] text-[14px] font-[500] text-neutral-600 dark:text-neutral-400">
+                    Connected Since
+                  </label>
+                  <p className="font-['Montserrat'] text-[16px] font-[600] text-neutral-900 dark:text-white">
+                    {new Date().toLocaleDateString()}
+                  </p>
+                </div>
               </div>
               
               <div className="flex items-center justify-center">
                 <div className="text-center">
-                  <Shield className="w-16 h-16 text-success-600 mx-auto mb-4" />
-                  <p className="font-['Montserrat'] text-[16px] font-[600] text-success-600">
+                  <Shield className="w-16 h-16 text-success-600 dark:text-success-400 mx-auto mb-4" />
+                  <p className="font-['Montserrat'] text-[16px] font-[600] text-success-600 dark:text-success-400">
                     Wallet Verified
                   </p>
                   <p className="font-['Montserrat'] text-[14px] text-neutral-600 dark:text-neutral-400">
