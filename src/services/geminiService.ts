@@ -13,7 +13,7 @@ class GeminiService {
   private baseUrl: string;
 
   constructor() {
-    this.apiKey = 'AIzaSyBzwpXAz7VoObQjwulzlxAJdvkLOQqE6_g';
+    this.apiKey = 'AIzaSyBc3k-TUsDFw91yEA-bO38svZhcgyjdBxE';
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
   }
 
