@@ -7,8 +7,8 @@ const mockCharacters: Character[] = [
     name: 'Zara the Strategist',
     avatar: 'https://images.pexels.com/photos/3785079/pexels-photo-3785079.jpeg?auto=compress&cs=tinysrgb&w=400',
     personality: 'Analytical, Strategic, Competitive',
-    backstory: 'A former military tactician turned AI game master',
-    skills: ['Strategy', 'Analysis', 'Leadership', 'Combat'],
+    backstory: 'A former military tactician turned AI game master specializing in Algorand blockchain technology',
+    skills: ['Algorand Analysis', 'DeFi Strategy', 'Technical Analysis', 'Smart Contracts', 'Trading'],
     level: 42,
     experience: 15680,
     status: 'active',
@@ -19,6 +19,7 @@ const mockCharacters: Character[] = [
     gamesPlayed: 127,
     winRate: 78.5,
     createdAt: '2024-01-15',
+    agentType: 'companion',
     traits: {
       intelligence: 95,
       creativity: 72,
@@ -44,6 +45,7 @@ const mockCharacters: Character[] = [
     gamesPlayed: 89,
     winRate: 65.2,
     createdAt: '2024-01-10',
+    agentType: 'companion',
     traits: {
       intelligence: 88,
       creativity: 92,
@@ -69,6 +71,7 @@ const mockCharacters: Character[] = [
     gamesPlayed: 156,
     winRate: 52.8,
     createdAt: '2024-01-05',
+    agentType: 'gamemaster',
     traits: {
       intelligence: 82,
       creativity: 95,
