@@ -13,18 +13,12 @@ class GeminiService {
   private baseUrl: string;
 
   constructor() {
-    // Use environment variable for API key, with fallback message
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+    this.apiKey = 'AIzaSyBzwpXAz7VoObQjwulzlxAJdvkLOQqE6_g';
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
   }
 
   async generateResponse(prompt: string, characterContext?: string): Promise<string> {
     try {
-      // Check if API key is available
-      if (!this.apiKey) {
-        return "I apologize, but the Gemini API key is not configured. Please set up your VITE_GEMINI_API_KEY environment variable with a valid Google AI Studio API key to enable AI responses.";
-      }
-
       const systemPrompt = `You are Zara the Strategist, an AI agent specialized in Algorand blockchain technology. You are analytical, strategic, and competitive with expertise in:
 
 - Algorand blockchain architecture and consensus mechanism
@@ -88,22 +82,7 @@ Respond as Zara the Strategist with expertise in Algorand, providing helpful, ac
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API Error Details:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        });
-        
-        if (response.status === 404) {
-          return "I apologize, but there's an issue with the API configuration. The API key may be invalid or expired. Please check your Gemini API key in Google AI Studio and update the VITE_GEMINI_API_KEY environment variable.";
-        } else if (response.status === 403) {
-          return "I apologize, but the API key doesn't have permission to access this service. Please check your API key permissions in Google AI Studio.";
-        } else if (response.status === 429) {
-          return "I apologize, but we've hit the API rate limit. Please try again in a moment.";
-        } else {
-          return `I apologize, but I'm experiencing technical difficulties (Error ${response.status}). Please try again later.`;
-        }
+        throw new Error(`Gemini API error: ${response.status}`);
       }
 
       const data: GeminiResponse = await response.json();
@@ -115,9 +94,6 @@ Respond as Zara the Strategist with expertise in Algorand, providing helpful, ac
       }
     } catch (error) {
       console.error('Error calling Gemini API:', error);
-      if (error instanceof Error && error.message.includes('fetch')) {
-        return "I apologize, but I'm having trouble connecting to the AI service. Please check your internet connection and try again.";
-      }
       return "I apologize, but I'm having trouble connecting right now. As Zara the Strategist, I'm always ready to discuss Algorand blockchain technology, trading strategies, and market analysis. Please try your question again.";
     }
   }
