@@ -1,4 +1,4 @@
-# Chain Agent - Decentralized AI Agent Launchpad
+# Algo Agent - Decentralized AI Agent Launchpad
 
 Create, tokenize, and deploy AI agents on the Algorand blockchain. Build social influencers, AI companions, and game masters with our no-code platform.
 
@@ -22,7 +22,7 @@ Create, tokenize, and deploy AI agents on the Algorand blockchain. Build social 
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd chain-agent-platform
+cd algo-agent-platform
 ```
 
 2. Install dependencies:

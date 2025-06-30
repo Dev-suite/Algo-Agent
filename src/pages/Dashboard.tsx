@@ -131,7 +131,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="text-center">
             <h2 className="font-['Montserrat'] text-[20px] sm:text-[24px] font-[700] text-white mb-2">
-              Chain Agent
+              Algo Agent
             </h2>
             <p className="font-['Montserrat'] text-[14px] sm:text-[16px] font-[400] text-white/80">
               Loading Dashboard...
@@ -157,7 +157,7 @@ const Dashboard: React.FC = () => {
             </div>
             {!sidebarCollapsed && (
               <span className="font-['Montserrat'] text-[20px] font-[700] text-white">
-                Chain Agent
+                Algo Agent
               </span>
             )}
           </div>
@@ -241,7 +241,7 @@ const Dashboard: React.FC = () => {
               <Bot className="w-5 h-5 text-white" />
             </div>
             <span className="font-['Montserrat'] text-[20px] font-[700] text-white">
-              Chain Agent
+              Algo Agent
             </span>
           </div>
           <button

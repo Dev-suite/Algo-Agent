@@ -1,9 +1,9 @@
 {
-  "name": "algoagent-platform",
+  "name": "algo-agent-platform",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "AlgoAgent - Decentralized AI Agent Launchpad on Algorand",
+  "description": "Algo Agent - Decentralized AI Agent Launchpad on Algorand",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

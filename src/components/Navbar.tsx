@@ -35,7 +35,7 @@ const Navbar: React.FC = () => {
               </div>
               <div>
                 <span className="font-['Montserrat'] text-[20px] font-[700] text-black">
-                  Chain Agent
+                  Algo Agent
                 </span>
               </div>
             </Link>
